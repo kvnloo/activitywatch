@@ -168,6 +168,43 @@ Use Medito or another recovery tool only at natural boundaries:
 
 Compare against fixed-time prompts. Avoid interrupting the very state the intervention is intended to protect.
 
+## Loop focus-shield intervention analysis
+
+The companion Loop experiment emits content-free reminder records:
+
+```text
+observedEpochMillis,reminderTime,deferredUntil,shieldedFlag,...
+```
+
+Save the `FlowShieldExperiment` logcat report to a text file, then join it to an ActivityWatch export:
+
+```sh
+python3 scripts/research_flow_intervention_analysis.py \
+  /path/to/activitywatch-export.json \
+  /path/to/loop-focus-shield-log.txt \
+  --timezone America/Chicago \
+  --output focus-shield-analysis.json
+```
+
+The analyzer creates event-centered windows for every eligible reminder:
+
+- 10 minutes before;
+- 2 minutes after;
+- 10 minutes after;
+- 30 minutes after.
+
+It reports, by control/shield condition:
+
+- context switch within two minutes, including a switch exactly at the reminder boundary;
+- whether the same context survived across the reminder boundary;
+- post-reminder switch counts;
+- post-reminder return-to-context latency;
+- the underlying privacy-preserving flow-proxy metrics for each window.
+
+No habit identity or raw app/context name is emitted.
+
+This is the first causal experiment in the flow program: **change one interruption mechanism, measure the behavioral consequence, and do not automate the detector until the intervention demonstrates value.**
+
 ## Falsifiers
 
 This research direction should be weakened or dropped if:
