@@ -16,7 +16,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-import research_flow_metrics as flow
+try:
+    from scripts import research_flow_metrics as flow
+except ImportError:  # direct execution from scripts/
+    import research_flow_metrics as flow
 
 
 SCHEMA = "activitywatch.flow-shield-intervention.v0"
