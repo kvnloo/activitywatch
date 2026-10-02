@@ -185,7 +185,7 @@ def analyze_record(
         "boundary_context_covered": boundary_covered,
         "same_context_across_boundary": same_context if boundary_covered else None,
         "switched_within_2m": (
-            post2["context_switch_count"] > 0
+            ((boundary_covered and not same_context) or post2["context_switch_count"] > 0)
             if post2["observed_window_seconds"] > 0
             else None
         ),
