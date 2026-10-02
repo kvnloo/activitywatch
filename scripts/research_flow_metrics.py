@@ -21,7 +21,7 @@ import json
 import math
 import statistics
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -68,7 +68,7 @@ def _event_interval(event: dict[str, Any]) -> Interval | None:
         return None
     if not math.isfinite(duration) or duration <= 0:
         return None
-    return Interval(start, start + __import__("datetime").timedelta(seconds=duration))
+    return Interval(start, start + timedelta(seconds=duration))
 
 
 def _bucket_type(bucket: dict[str, Any]) -> str:
