@@ -182,7 +182,6 @@ Save the `FlowShieldExperiment` logcat report to a text file, then join it to an
 python3 scripts/research_flow_intervention_analysis.py \
   /path/to/activitywatch-export.json \
   /path/to/loop-focus-shield-log.txt \
-  --timezone America/Chicago \
   --output focus-shield-analysis.json
 ```
 
