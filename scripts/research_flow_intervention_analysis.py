@@ -65,10 +65,16 @@ def _clip_event(
     clipped_end = min(iv.end, end)
     if clipped_end <= clipped_start:
         return None
+    data = event.get("data")
+    if not isinstance(data, dict):
+        data = {}
+    # Only copy the fields the downstream metrics need. Private titles,
+    # URLs, and extension fields must not even reach the intermediate join.
+    minimal_data = {key: data[key] for key in ("app", "status") if key in data}
     return {
         "timestamp": clipped_start.isoformat(),
         "duration": (clipped_end - clipped_start).total_seconds(),
-        "data": dict(event.get("data") or {}),
+        "data": minimal_data,
     }
 
 
