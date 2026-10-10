@@ -119,8 +119,11 @@ def _context_on_each_side(
         ),
         flow.active_intervals(clip_events(afk_events, before_start, after_end)),
     )
-    before = [s for s in segments if s.start < anchor and s.end >= before_start]
-    after = [s for s in segments if s.end > anchor and s.start <= after_end]
+    # Require an observed context immediately on *both* sides of the anchor.
+    # Merely having a segment somewhere in a 15-second probe is insufficient:
+    # a missing watcher or AFK gap is not evidence of uninterrupted focus.
+    before = [s for s in segments if s.start < anchor <= s.end]
+    after = [s for s in segments if s.start <= anchor < s.end]
     if not before or not after:
         return False, False
     return True, before[-1].context == after[0].context
@@ -171,6 +174,19 @@ def analyze_record(
         context_map,
     )
 
+    # Positive switches are observed even if the watcher later stops. A
+    # negative needs both an observed boundary and >=95% post-window coverage;
+    # otherwise it is censored (None), never silently scored as uninterrupted.
+    observed_switch = (
+        (boundary_covered and not same_context)
+        or post2["context_switch_count"] > 0
+    )
+    sufficient_post_coverage = post2["observed_window_seconds"] >= 0.95 * 120
+    switched_within_2m = (
+        True if observed_switch else
+        False if boundary_covered and sufficient_post_coverage else None
+    )
+
     shielded = bool(record["shielded"])
     reminder_time = int(record["reminder_time"])
     deferred_until = int(record["deferred_until"])
@@ -184,11 +200,7 @@ def analyze_record(
         ),
         "boundary_context_covered": boundary_covered,
         "same_context_across_boundary": same_context if boundary_covered else None,
-        "switched_within_2m": (
-            ((boundary_covered and not same_context) or post2["context_switch_count"] > 0)
-            if post2["observed_window_seconds"] > 0
-            else None
-        ),
+        "switched_within_2m": switched_within_2m,
         "pre_10m": pre10,
         "post_2m": post2,
         "post_10m": post10,
@@ -218,6 +230,9 @@ def summarize(events: list[dict[str, Any]]) -> dict[str, Any]:
         ]
         out[condition] = {
             "n": len(rows),
+            "switch_assessable_n": len(switched),
+            "switch_censored_n": len(rows) - len(switched),
+            "boundary_covered_n": len(stable),
             "switch_within_2m_rate": (
                 sum(bool(x) for x in switched) / len(switched) if switched else None
             ),
