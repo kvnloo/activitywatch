@@ -195,6 +195,11 @@ The analyzer creates event-centered windows for every eligible reminder:
 It reports, by control/shield condition:
 
 - context switch within two minutes, including a switch exactly at the reminder boundary;
+  known positives remain positive even with later missing data; negatives require
+  an observed context on both sides of the boundary and at least 95% observed
+  window coverage over the next two minutes;
+- assessed and censored reminder counts separately, so watcher failure/AFK
+  gaps cannot quietly become evidence that a shielded reminder protected flow;
 - whether the same context survived across the reminder boundary;
 - post-reminder switch counts;
 - post-reminder return-to-context latency;
