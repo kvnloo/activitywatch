@@ -206,6 +206,8 @@ It reports, by control/shield condition:
 - the underlying privacy-preserving flow-proxy metrics for each window.
 
 No habit identity or raw app/context name is emitted.
+The event-aligned join also strips window titles, URLs, and unneeded event fields
+from its intermediate clipped records before computing statistics.
 
 This is the first causal experiment in the flow program: **change one interruption mechanism, measure the behavioral consequence, and do not automate the detector until the intervention demonstrates value.**
 
