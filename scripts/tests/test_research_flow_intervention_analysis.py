@@ -103,3 +103,54 @@ def test_clipping_preserves_only_requested_window() -> None:
     assert len(clipped) == 1
     assert clipped[0]["duration"] == 120
     assert clipped[0]["data"]["title"] == "private"
+
+
+def test_missing_boundary_is_censored_even_if_post_window_mostly_observed() -> None:
+    anchor = datetime(2026, 10, 1, 14, 0, tzinfo=timezone.utc)
+    afk = [_event(anchor - timedelta(minutes=1), 240, {"status": "not-afk"})]
+    window = [
+        _event(anchor - timedelta(seconds=45), 40, {"app": "Editor"}),
+        _event(anchor + timedelta(seconds=5), 115, {"app": "Editor"}),
+    ]
+    result = analysis.analyze_record(
+        {"observed_epoch_ms": int(anchor.timestamp() * 1000),
+         "reminder_time": 1, "deferred_until": 0, "shielded": False},
+        window, afk, {},
+    )
+    assert result["boundary_context_covered"] is False
+    assert result["switched_within_2m"] is None
+    summary = analysis.summarize([result])
+    assert summary["control"]["switch_assessable_n"] == 0
+    assert summary["control"]["switch_censored_n"] == 1
+    assert summary["control"]["switch_within_2m_rate"] is None
+
+
+def test_sparse_post_window_is_not_scored_as_no_interruption() -> None:
+    anchor = datetime(2026, 10, 1, 14, 0, tzinfo=timezone.utc)
+    afk = [_event(anchor - timedelta(minutes=1), 240, {"status": "not-afk"})]
+    window = [_event(anchor - timedelta(seconds=45), 75, {"app": "Editor"})]
+    result = analysis.analyze_record(
+        {"observed_epoch_ms": int(anchor.timestamp() * 1000),
+         "reminder_time": 1, "deferred_until": 0, "shielded": False},
+        window, afk, {},
+    )
+    assert result["boundary_context_covered"] is True
+    assert result["same_context_across_boundary"] is True
+    assert result["switched_within_2m"] is None
+
+
+def test_observed_switch_remains_positive_despite_later_missing_events() -> None:
+    anchor = datetime(2026, 10, 1, 14, 0, tzinfo=timezone.utc)
+    afk = [_event(anchor - timedelta(minutes=1), 240, {"status": "not-afk"})]
+    window = [
+        _event(anchor - timedelta(seconds=30), 30, {"app": "Editor"}),
+        _event(anchor, 10, {"app": "Mail"}),
+    ]
+    result = analysis.analyze_record(
+        {"observed_epoch_ms": int(anchor.timestamp() * 1000),
+         "reminder_time": 1, "deferred_until": 0, "shielded": False},
+        window, afk, {},
+    )
+    assert result["boundary_context_covered"] is True
+    assert result["same_context_across_boundary"] is False
+    assert result["switched_within_2m"] is True
