@@ -102,7 +102,14 @@ def test_clipping_preserves_only_requested_window() -> None:
     )
     assert len(clipped) == 1
     assert clipped[0]["duration"] == 120
-    assert clipped[0]["data"]["title"] == "private"
+    assert clipped[0]["data"] == {"app": "Editor"}
+    afk_event = _event(start, 600, {"status": "not-afk", "title": "private"})
+    afk_clip = analysis.clip_events(
+        [afk_event],
+        start + timedelta(minutes=2),
+        start + timedelta(minutes=4),
+    )
+    assert afk_clip[0]["data"] == {"status": "not-afk"}
 
 
 def test_missing_boundary_is_censored_even_if_post_window_mostly_observed() -> None:
