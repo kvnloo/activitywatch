@@ -5,6 +5,14 @@ Downstream fork: https://github.com/kvnloo/activitywatch
 
 This is the **single project-local promotion ledger** while Issues/Discussions are disabled on this fork. It is not approval for origin publication. Original authors, PRs, reviews and evidence retain their own provenance.
 
+## Verified promotion receipt (2026-10-16 CDT / 2026-10-17 UTC)
+
+- [Pilot PR #103](https://github.com/kvnloo/oss-factory/pull/103) exact pushed head: [20b8d134f23a465791a6281691ff0630e0400ed8](https://github.com/kvnloo/oss-factory/commit/20b8d134f23a465791a6281691ff0630e0400ed8).
+- [GitHub Actions #39004452145](https://github.com/kvnloo/oss-factory/actions/runs/39004452145): **96/96 synthetic Python tests passed**; source compilation and two-day sample generation passed; registry validated **38 unique records**.
+- PR is mergeable and 0 behind factory main, but remains **LIMITED: downstream human review only**. No ActivityWatch origin PR, CI on real personal data, or default-branch merge.
+- New code covers strict review-log types, app-name privacy, FSRS calibration with opt-in suppression, and explicit scheduler-day rollover. The Anki 4 AM default is a user-configurable setting; actual runtime preference must be known before interpreting a true daily join.
+- Registry reconciliation preserved the previous 37 canonical project objects/topology and added ActivityWatch without deleting anyone's work. Contributor credit and existing fork draft #2 retained.
+
 ## Origin-ready
 None independently verified. Do not publish an origin PR based only on synthetic fixture success.
 
