@@ -33,3 +33,12 @@ None independently verified. Do not publish an origin PR based only on synthetic
 No personally identifiable usage/learning data or raw timestamps/URLs/card IDs belong here. Synthetic review-button pass rate is **not independently measured mastery or causal learning effect**.
 
 Legacy factory issue: https://github.com/kvnloo/oss-factory/issues/179 (historical redirect only).
+
+## QA receipt — 2026-10-17 (Lane 19)
+
+- [Existing pilot PR #103](https://github.com/kvnloo/oss-factory/pull/103) exact head [`0ed9791cba20f387c1930ae7766fdd3a8eeed0cf`](https://github.com/kvnloo/oss-factory/commit/0ed9791cba20f387c1930ae7766fdd3a8eeed0cf), [hosted CI #39014103407](https://github.com/kvnloo/oss-factory/actions/runs/39014103407): **103/103 Python tests passed** (7 new synthetic-only tests, including 800 deterministic perturbations). Head was **0 behind main**, mergeable and without reviews/comments at this receipt's preflight.
+- Correctness: conflicting held-out Anki review IDs now suppress aggregate FSRS Brier/calibration metrics, avoiding potentially selection-biased scores. This is fixture-level contract evidence, **not** verified learner benefit, true FSRS prediction provenance, independently demonstrated mastery or a user-facing ActivityWatch requirement.
+- **LIMITED / human review only.** No personal telemetry, origin-facing ActivityWatch write, or default-branch merge. Retain [ActivityWatch fork draft #2](https://github.com/kvnloo/activitywatch/pull/2) and earlier code/author receipts as separate sources.
+- **Lane 7:** self-reported review-button recall is not independently measured mastery; declared pre-review timestamps and training cutoffs do not establish genuine prediction provenance or leakage-free fitting; unknown/malformed denominators stay unknown.
+- **Lane 6:** suggest opt-in, local-only aggregate exploration only; never infer a causal benefit from screen time or change FSRS scheduling. Affirmative consent is required for real inputs.
+- **Credit:** Erik and Johan Bjäreholt/ActivityWatch contributors; Damien Elmes/Anki contributors; open-spaced-repetition FSRS contributors; BAI-LAB MemoryOS and NeuroForge contributors; synthetic contract/QA by Zer0 OSS Factory Lane 19. Preserve original licenses.
