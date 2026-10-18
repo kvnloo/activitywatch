@@ -50,3 +50,7 @@ Legacy factory issue: https://github.com/kvnloo/oss-factory/issues/179 (historic
 - **LIMITED; not origin-ready.** The privacy projection is optional caller-enforced routing, **not anonymization or a security boundary**; the local opt-in evaluation can still expose calibration cell counts/fractions if leaked without the projection. Separate privacy review, authentic prediction provenance, independent user need, and explicit bounded origin approval remain missing.
 - **Lane 7 evaluation contract:** review-button pass is self-reported recall; prediction chronology/model-fit cutoffs remain declared and cannot prove independent mastery or learning gains. **Lane 6:** affirmative opt-in/local-only routing; do not infer causality from screen time or modify FSRS scheduling.
 - No identifiable learner telemetry, upstream GitHub writes, or default-branch merges. Original ActivityWatch/Anki/FSRS, BAI-LAB MemoryOS and NeuroForge contributors remain credited; synthetic QA by Zer0 OSS Factory Lane 19.
+
+## QA — 2026-10-18 UTC
+
+[Lane 19 PR #103 head](https://github.com/kvnloo/oss-factory/commit/d6c7041e8fd23db6f8d814d6d3effb47e38ed3af) passed [126/126 hosted tests](https://github.com/kvnloo/oss-factory/actions/runs/39086997916). Synthetic-only export schema validation; opt-in local calibration remains local, outbound projection metadata-only. Lane 7: self-reported Anki grades differ from predicted recall and independent mastery; no causal claims. Lane 6: consent and caller-enforced routing required. LIMITED; no origin action/merge.
