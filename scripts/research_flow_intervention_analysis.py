@@ -27,12 +27,16 @@ SCHEMA = "activitywatch.flow-shield-intervention.v0"
 
 def parse_loop_records(text: str) -> list[dict[str, int | bool]]:
     """Parse raw comma-separated values or a logcat line containing records=..."""
-    matches = re.findall(r"(?:^|\s)records=([0-9,]*)", text)
+    matches = re.findall(r"(?:^|\s)records=(\S*)", text)
     payload = matches[-1] if matches else text.strip()
-    payload = payload.strip().strip(",")
+    payload = payload.strip()
     if not payload:
         return []
-    values = [int(x) for x in payload.split(",") if x.strip()]
+    # Validate the entire token, not a valid numeric prefix of a corrupt log.
+    # Never echo untrusted payloads (which may include private content) in errors.
+    if not re.fullmatch(r"[0-9]+(?:,[0-9]+)*,?", payload):
+        raise ValueError("Loop focus-shield record payload is malformed")
+    values = [int(x) for x in payload.rstrip(",").split(",")]
     if len(values) % 4 != 0:
         raise ValueError(
             f"Loop focus-shield records must contain groups of 4 values; got {len(values)}"

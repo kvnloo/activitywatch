@@ -21,7 +21,7 @@ import json
 import math
 import statistics
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -68,7 +68,10 @@ def _event_interval(event: dict[str, Any]) -> Interval | None:
         return None
     if not math.isfinite(duration) or duration <= 0:
         return None
-    return Interval(start, start + timedelta(seconds=duration))
+    try:
+        return Interval(start, start + timedelta(seconds=duration))
+    except OverflowError:
+        return None
 
 
 def _bucket_type(bucket: dict[str, Any]) -> str:
@@ -316,6 +319,45 @@ def compute_metrics(
     }
 
 
+def _events_by_local_day(
+    events: list[dict[str, Any]], tz: ZoneInfo,
+) -> dict[str, list[dict[str, Any]]]:
+    """Split valid half-open intervals at local midnights; keep only used fields.
+
+    Midnight boundaries are converted to UTC before subtracting, so a civil day
+    can contain 23 or 25 hours. This does not infer an event time from a date.
+    """
+    days: dict[str, list[dict[str, Any]]] = {}
+    for event in events:
+        iv = _event_interval(event)
+        if iv is None:
+            continue
+        # A watcher interval spanning years is not a useful daily observation.
+        # Fail closed instead of allocating an unbounded number of day buckets.
+        if iv.seconds > 366 * 86400:
+            raise ValueError("watcher interval exceeds one-year research limit")
+        data = event.get("data")
+        minimal = {key: data[key] for key in ("app", "status") if key in data} if isinstance(data, dict) else {}
+        cursor = iv.start
+        while cursor < iv.end:
+            local_day = cursor.astimezone(tz).date()
+            try:
+                midnight = datetime.combine(local_day + timedelta(days=1), time(), tz)
+                boundary = midnight.astimezone(timezone.utc)
+            except (OverflowError, ValueError):
+                boundary = iv.end
+            stop = min(iv.end, boundary)
+            if stop <= cursor:
+                raise ValueError("local-day boundary did not advance")
+            days.setdefault(local_day.isoformat(), []).append({
+                "timestamp": cursor.isoformat(),
+                "duration": (stop - cursor).total_seconds(),
+                "data": dict(minimal),
+            })
+            cursor = stop
+    return days
+
+
 def compute_daily(
     window_events: list[dict[str, Any]],
     afk_events: list[dict[str, Any]],
@@ -325,40 +367,23 @@ def compute_daily(
     focus_min_seconds: float = 20 * 60,
     return_horizon_seconds: float = 30 * 60,
 ) -> dict[str, dict[str, Any]]:
-    """Compute daily metrics by assigning each event to its local start date.
+    """Compute each local day's metrics from that day's clipped observations.
 
-    This is intentionally simple for v0. Midnight-spanning events are rare and
-    remain assigned to the day on which they started; a later experiment can
-    split at local-day boundaries if that matters empirically.
+    Invalid intervals are excluded consistently with the overall analysis.
+    Context dwell and return episodes are intentionally bounded by each day;
+    their counts/medians are not additive across midnight.
     """
-    days: set[str] = set()
-    for event in [*window_events, *afk_events]:
-        try:
-            day = _parse_timestamp(str(event["timestamp"])).astimezone(tz).date().isoformat()
-            days.add(day)
-        except (KeyError, TypeError, ValueError):
-            continue
-
-    out: dict[str, dict[str, Any]] = {}
-    for day in sorted(days):
-        w = [
-            e
-            for e in window_events
-            if _parse_timestamp(str(e["timestamp"])).astimezone(tz).date().isoformat() == day
-        ]
-        a = [
-            e
-            for e in afk_events
-            if _parse_timestamp(str(e["timestamp"])).astimezone(tz).date().isoformat() == day
-        ]
-        out[day] = compute_metrics(
-            w,
-            a,
+    windows = _events_by_local_day(window_events, tz)
+    active = _events_by_local_day(afk_events, tz)
+    return {
+        day: compute_metrics(
+            windows.get(day, []), active.get(day, []),
             context_map=context_map,
             focus_min_seconds=focus_min_seconds,
             return_horizon_seconds=return_horizon_seconds,
         )
-    return out
+        for day in sorted(windows.keys() | active.keys())
+    }
 
 
 def _load_context_map(path: Path | None) -> dict[str, str]:
@@ -425,6 +450,7 @@ def main() -> int:
             "window_bucket": window_id,
             "afk_bucket": afk_id,
             "timezone": args.timezone,
+            "day_attribution": "local-midnight-split-v1",
         },
         "privacy": {
             "uses": ["timestamp", "duration", "application/context identity", "AFK status"],
