@@ -21,7 +21,13 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+try:
+    from scripts import research_anki_outcomes as anki
+except ImportError:  # Direct script execution from scripts/.
+    import research_anki_outcomes as anki
+
 SCHEMA = "loop-noop-preview.v1"
+SCHEMA_WITH_LEARNING = "loop-noop-preview.v2"
 MAPPING_SCHEMA = "loop-noop-preview.mapping.v1"
 MAX_BYTES = 8 * 1024 * 1024
 MAX_ROWS = 20_000
@@ -158,7 +164,7 @@ def _activity_daily(report: Any, timezone_name: str) -> dict[str, dict[str, Any]
 
 def build_preview(
     csv_data: bytes, mapping: Any, from_day: str, through_day: str,
-    activity_report: Any = None,
+    activity_report: Any = None, anki_report: Any = None,
 ) -> dict[str, Any]:
     mapping = validate_mapping(mapping)
     first, last = parse_day(from_day), parse_day(through_day)
@@ -171,6 +177,9 @@ def build_preview(
         raise ValueError("wake-day mapping exceeds the calendar range") from None
     states, duplicates = parse_checkmarks(csv_data)
     activity = _activity_daily(activity_report, mapping["timezone"])
+    learning, learning_provenance = ({}, {}) if anki_report is None else anki.daily_for_bridge(
+        anki_report, mapping["timezone"],
+    )
     rows = []
     for offset in range(count):
         day = first + timedelta(days=offset)
@@ -187,10 +196,12 @@ def build_preview(
             "explicit_journal_answer_preview": ANSWERS.get(state),
             "activity_on_source_day": activity.get(local_day),
         }
+        if anki_report is not None:
+            row["learning_on_source_day"] = learning.get(local_day)
         rows.append(row)
     counts = Counter(row["source_state"] for row in rows)
-    return {
-        "schema": SCHEMA,
+    result = {
+        "schema": SCHEMA if anki_report is None else SCHEMA_WITH_LEARNING,
         "mode": "local-preview-only",
         "noop_write_performed": False,
         "target_catalog_verified": False,
@@ -208,6 +219,12 @@ def build_preview(
                     "source_state_counts": dict(sorted(counts.items()))},
         "observations": rows,
     }
+
+    if anki_report is not None:
+        result["provenance"]["learning_report"] = learning_provenance
+        result["privacy"]["card_contents_emitted"] = False
+        result["privacy"]["card_ids_emitted"] = False
+    return result
 
 
 def _read_bounded(path: Path) -> bytes:
@@ -243,18 +260,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--from-day", required=True)
     parser.add_argument("--through-day", required=True)
     parser.add_argument("--activity-report", type=Path)
+    parser.add_argument("--anki-report", type=Path, help="optional sanitized Anki review-summary v1 JSON")
     parser.add_argument("--output", type=Path, help="new JSON file; existing files are never overwritten")
     args = parser.parse_args(argv)
     try:
         sources = [args.checkmarks, args.mapping]
         if args.activity_report:
             sources.append(args.activity_report)
+        if args.anki_report:
+            sources.append(args.anki_report)
         if args.output and args.output.resolve() in {p.resolve() for p in sources}:
             raise ValueError("output must not replace an input file")
         report = build_preview(
             _read_bounded(args.checkmarks), _load_json(_read_bounded(args.mapping)),
             args.from_day, args.through_day,
             _load_json(_read_bounded(args.activity_report)) if args.activity_report else None,
+            _load_json(_read_bounded(args.anki_report)) if args.anki_report else None,
         )
         rendered = json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False)+"\n"
         if args.output:
