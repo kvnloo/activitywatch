@@ -1,6 +1,6 @@
 """Synthetic temporal/parse regressions needed before joining independent sources."""
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 import pytest

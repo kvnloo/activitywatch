@@ -315,6 +315,9 @@ def main(argv: list[str] | None = None) -> int:
     except (ValueError, TypeError, OverflowError):
         parser.exit(2, "error: invalid revlog input or configuration; check the documented contract\n")
 
+    # argparse exits in production; retain an explicit integer return for test doubles.
+    return 2
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

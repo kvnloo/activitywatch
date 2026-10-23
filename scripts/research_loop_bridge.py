@@ -293,6 +293,9 @@ def main(argv: list[str] | None = None) -> int:
         # Deliberately exclude exception strings and input values from CLI logs.
         parser.exit(2, "error: invalid input or mapping; check the documented v1 contract\n")
 
+    # argparse exits in production; retain an explicit integer return for test doubles.
+    return 2
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
