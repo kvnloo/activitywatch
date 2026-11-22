@@ -23,6 +23,11 @@ def major_minor(version: str) -> str:
     return ".".join(match.groups())
 
 
+def _is_placeholder_dev_snapshot(version: str) -> bool:
+    """Untagged CI placeholder; still validate the actual embedded versions."""
+    return bool(re.fullmatch(r"0\.0\.0\.dev-(?:[0-9a-f]{7,40}|unknown)", version))
+
+
 def read_package_version(cargo_toml: Path) -> str:
     in_package = False
     for line in cargo_toml.read_text(encoding="utf-8").splitlines():
@@ -71,7 +76,7 @@ def validation_errors(
     tauri_revision: str,
 ) -> List[str]:
     errors = []
-    if release_version is not None:
+    if release_version is not None and not _is_placeholder_dev_snapshot(release_version):
         release_line = major_minor(release_version)
         if major_minor(submodule_version) != release_line:
             errors.append(
@@ -82,6 +87,12 @@ def validation_errors(
             errors.append(
                 f"Tauri locks aw-server {tauri_version}, which does not match release line "
                 f"{release_line}"
+            )
+    else:
+        if major_minor(submodule_version) != major_minor(tauri_version):
+            errors.append(
+                f"Tauri locks aw-server {tauri_version}, which does not match "
+                f"aw-server-rust submodule version {submodule_version}"
             )
     if tauri_revision != submodule_revision:
         errors.append(
@@ -257,6 +268,7 @@ def main() -> int:
             print(f"  - {error}", file=sys.stderr)
         if (
             args.release_version is not None
+            and not _is_placeholder_dev_snapshot(args.release_version)
             and major_minor(tauri_version) != major_minor(args.release_version)
         ):
             print(
